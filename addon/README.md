@@ -42,7 +42,11 @@ Deep links preselect a sample and run it, e.g. `/viewer/#sample=chameleon_sample
 ## Status
 
 The browser mode is tested end to end (headless Chrome against the running engine). The
-Express-side calls were written against the official type definitions
-(`@adobe/ccweb-add-on-sdk-types` 1.40) but have not been run inside Express from this machine;
-treat *live resize* as beta. Fonts in an Express page that aren't in the brand kit are measured
+document code (`src/sandbox/code.js`) is tested by `node addon/test/sandbox.test.mjs`: it runs
+against a simulated Express document shaped after the official type definitions
+(`@adobe/ccweb-add-on-sdk-types` 1.40) and the real engine — read a page, lay it out, apply it to
+a resized clone, check every node landed where the engine put it and the source page is untouched
+(CI runs it against the engine inside the Docker image). What no test here can cover is the real
+Express runtime itself (it needs an Adobe login), so treat *live resize* as beta until it has
+been clicked through once in Express. Fonts in an Express page that aren't in the brand kit are measured
 with a fallback, so Express may wrap a line differently from the engine's preview.

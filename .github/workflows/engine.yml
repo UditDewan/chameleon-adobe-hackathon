@@ -29,6 +29,11 @@ jobs:
           docker run --rm --network none -v "$PWD/tests:/app/tests:ro" -v "$PWD/input:/app/input:ro" \
             --entrypoint python chameleon -m tests.test_engine
 
+      - name: Add-on sandbox code against a simulated Express document + the engine in the image
+        env:
+          PYTHON: docker run --rm -i --network none --entrypoint python chameleon
+        run: node addon/test/sandbox.test.mjs
+
       - uses: actions/upload-artifact@v4
         with:
           name: sample-outputs
