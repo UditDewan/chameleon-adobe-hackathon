@@ -20,3 +20,7 @@ venv/
 # Generated run artifacts
 output/*
 !output/.gitkeep
+
+# Add-on build artifacts
+addon/node_modules/
+addon/dist/

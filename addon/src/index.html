@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="description" content="Chameleon: resize any design to every canvas - re-laid-out, not stretched" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Chameleon Resize</title>
+        <style>
+            :root {
+                --ink: #1f1d2b; --muted: #6b6880; --line: #e4e1ec; --chip: #f4f2f8;
+                --accent: #e86a3a; --ok: #2e9e5b; --bad: #c63b3b;
+            }
+            * { box-sizing: border-box; }
+            body { margin: 0; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: #fff; }
+            main { padding: 16px; max-width: 1180px; margin: 0 auto; }
+            header { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+            h1 { font-size: 17px; margin: 0; }
+            .tag { color: var(--muted); font-size: 12px; }
+            .status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+            .dot { width: 8px; height: 8px; border-radius: 50%; background: #bbb; }
+            .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+            section { margin-top: 16px; }
+            h2 { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+            .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+            select, input[type="text"] { font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; max-width: 100%; }
+            .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+            .chip { font: inherit; border: 1px solid var(--line); background: var(--chip); border-radius: 14px; padding: 3px 10px; cursor: pointer; }
+            .chip small { opacity: .65; margin-left: 4px; }
+            .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+            button.primary { font: inherit; background: var(--accent); color: #fff; border: 0; border-radius: 16px; height: 32px; padding: 0 18px; cursor: pointer; }
+            button.primary:disabled { background: #c9c6d3; cursor: default; }
+            .ghost { font: inherit; background: none; border: 1px solid var(--line); border-radius: 14px; height: 28px; padding: 0 10px; cursor: pointer; display: inline-flex; align-items: center; }
+            .ghost:disabled { opacity: .5; cursor: default; }
+            .source { display: flex; gap: 12px; align-items: center; margin-top: 8px; min-height: 40px; }
+            .source img, .source canvas { max-height: 110px; max-width: 160px; border: 1px solid var(--line); border-radius: 4px; }
+            .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+            .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+            .thumb { height: 170px; display: flex; align-items: center; justify-content: center; border-radius: 4px; overflow: hidden;
+                     background: repeating-conic-gradient(#f3f1f7 0% 25%, #fff 0% 50%) 50% / 16px 16px; }
+            .thumb img, .thumb canvas { max-width: 100%; max-height: 100%; }
+            .meta b { font-weight: 600; }
+            .meta, .note { color: var(--muted); font-size: 12px; }
+            .note { font-size: 11px; }
+            .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+            .msg { color: var(--muted); font-size: 12px; }
+            .msg.err { color: var(--bad); }
+            details { margin-top: 20px; color: var(--muted); font-size: 12px; }
+            @media (max-width: 420px) { main { padding: 12px; } .grid { grid-template-columns: 1fr; } }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <h1>Chameleon</h1>
+                <span class="tag">any design, every canvas</span>
+                <span class="status"><span id="dot" class="dot"></span><span id="status">connecting…</span></span>
+            </header>
+
+            <section>
+                <h2>Design</h2>
+                <div class="row">
+                    <select id="source" aria-label="Design to resize"></select>
+                    <label class="ghost">Open JSON…<input id="file" type="file" accept=".json,application/json" hidden /></label>
+                </div>
+                <div class="source" id="preview"></div>
+            </section>
+
+            <section>
+                <h2>Formats</h2>
+                <div class="row" id="packs"></div>
+                <div class="chips" id="formats"></div>
+            </section>
+
+            <section class="row">
+                <button id="go" class="primary" disabled>Resize</button>
+                <button id="all" class="ghost" hidden></button>
+                <span id="msg" class="msg" role="status"></span>
+            </section>
+
+            <section><div class="grid" id="results"></div></section>
+
+            <details>
+                <summary>Engine</summary>
+                <p>The layout engine runs locally: <code>python -m engine.server</code>.</p>
+                <div class="row"><input id="engine" type="text" size="28" aria-label="Engine URL" />
+                    <button id="reconnect" class="ghost">Connect</button></div>
+            </details>
+        </main>
+        <script type="module" src="ui/index.js"></script>
+    </body>
+</html>

@@ -38,13 +38,19 @@ _BOLD = {"bold", "semibold", "extrabold", "black"}
 _RGB = re.compile(r"rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)")
 
 
-def resize(source: dict[str, Any], target_canvas: dict[str, Any]) -> dict[str, Any]:
+def resize(source: dict[str, Any], target_canvas: dict[str, Any], notes: dict | None = None) -> dict[str, Any]:
+    """`notes`, if given, is filled with what the engine decided (layout, dropped / hidden ids)."""
     canvas = {"width": int(target_canvas["width"]), "height": int(target_canvas["height"])}
     try:
-        elements = _Engine(source, canvas).run()
+        engine = _Engine(source, canvas)
+        elements = engine.run()
+        if notes is not None:
+            notes.update(engine.notes)
     except Exception:  # never crash a batch: a letterbox is valid output, just less designed
         traceback.print_exc()
         elements = _letterbox(source, canvas)
+        if notes is not None:
+            notes.update(layout="letterbox", dropped=[], hidden=[])
     return {"canvas": canvas, "elements": elements}
 
 
@@ -309,8 +315,8 @@ class _Unit:
 
 
 class _Layout:
-    def __init__(self, place, dropped):
-        self.place, self.dropped = place, set(dropped)  # place: unit -> (x, y, w, h, payload)
+    def __init__(self, place, dropped, kind=""):
+        self.place, self.dropped, self.kind = place, set(dropped), kind  # place: unit -> (x, y, w, h, payload)
 
 
 def _split_axis(units, axis, tol):
@@ -380,8 +386,9 @@ class _Engine:
         cov, canvas = W0 * H0, (0.0, 0.0, W0, H0)
         self.bg, self.hidden, self.passive, rest = [], [], [], []
         for e in self.src["elements"]:
-            if e["type"] == "image" and _asset(e.get("asset_id")) is None:
+            if e["type"] == "image" and e.get("asset_id") and _asset(e["asset_id"]) is None:
                 self.hidden.append(e)  # missing asset: skip it rather than show a broken placeholder
+                # (no asset_id at all = a picture that lives elsewhere, e.g. in Express: an opaque box)
             elif (e["width"] <= 0 or e["height"] <= 0 or (e["type"] == "text" and not str(e.get("content", "")).strip())
                   or (e["type"] != "text" and _alpha(e) <= 0.01)):
                 self.passive.append(e)  # nothing visible to lay out: it just keeps its relative place
@@ -843,7 +850,7 @@ class _Engine:
     def _stack_all(self, gone):
         place = self._flow(self._active(self.flow_rows, gone), self._rect(),
                            [u for u in self.pins if u not in gone])
-        return None if place is None else _Layout(place, gone)
+        return None if place is None else _Layout(place, gone, "stack")
 
     def _split(self, gone, side):
         hero = self.hero
@@ -873,7 +880,7 @@ class _Engine:
             place = self._flow(rows, col, pins, mplace)
             if place is None:
                 continue
-            lay = _Layout(place, gone)
+            lay = _Layout(place, gone, "split, picture " + ("left" if side == "l" else "right"))
             sc = self._score(lay)
             if sc > best_sc:
                 best, best_sc = lay, sc
@@ -901,7 +908,7 @@ class _Engine:
         seq = imgs + ([None] if mid else []) + ends
         n = len(seq)
         if n == 0:
-            return _Layout({}, gone)
+            return _Layout({}, gone, "banner row")
         cap = max(1.0, 1.3 * self.s_geo)
         ik = {u: min((1.0 if u.role == "hero" else 0.8) * rh / u.h, cap, 0.4 * rw / u.w, self._kmax(u)) for u in imgs}
         gap = max(0.015 * W, 0.1 * rh)
@@ -936,7 +943,7 @@ class _Engine:
                         H - (u.pad[3] * k if p[0] == "r" else 0.0) - h)
                 place[u] = (x, y, w, h, p)
             x += w + g
-        return _Layout(place, gone)
+        return _Layout(place, gone, "banner row")
 
     def _row_fit(self, seq, mid, fixed, ends, x0, rw, rh, gap):
         """Largest text scale t at which pictures + text stack + ends fit the banner."""
@@ -1041,7 +1048,7 @@ class _Engine:
     def run(self):
         r = self.W / self.H
         if not self.content:
-            lay = _Layout({}, set())
+            lay = _Layout({}, set(), "background only")
         elif r >= 2.4:
             lay = self._solve(self._row)
         else:
@@ -1054,7 +1061,10 @@ class _Engine:
             cands = [c for c in cands if c is not None]
             lay = max(cands, key=self._score) if cands else None
         if lay is None:
+            self.notes = {"layout": "letterbox", "dropped": [], "hidden": []}
             return _letterbox(self.src, {"width": int(self.W), "height": int(self.H)})
+        self.notes = {"layout": lay.kind, "dropped": sorted(e["id"] for u in lay.dropped for e in u.els),
+                      "hidden": sorted(e["id"] for e in self.hidden)}
         return self._emit(lay)
 
     # ------------------------------------------------------------------ emit
