@@ -25,3 +25,4 @@ output/*
 addon/node_modules/
 addon/dist/
 addon/dist.zip
+chameleon-submission.zip
