@@ -32,6 +32,9 @@ npm start                               # serves the add-on over https://localho
 3. In Adobe Express: *Settings → enable Add-on Development*, then *Add-ons → Your add-ons →
    Add-on Testing*, and connect to `https://localhost:5241`.
 
+`npm run build` / `npm run package` (→ `dist.zip`, the bundle you upload to Adobe) both pass with
+Adobe's tooling; append `-- --analytics off` to skip its analytics prompt.
+
 The same panel also works in any browser without Express: start the engine and open
 <http://localhost:8787/viewer/> — the cards then offer PNG / JSON downloads instead.
 Deep links preselect a sample and run it, e.g. `/viewer/#sample=chameleon_sample_level2_core&run`.
