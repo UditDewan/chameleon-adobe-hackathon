@@ -1,0 +1,54 @@
+# Builds the engine image and runs it exactly the way stage-one scoring does:
+# linux/amd64, no network at run time, input/ and output/ mounted as volumes.
+name: engine
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build --platform linux/amd64 -t chameleon .
+
+      - name: Run it like the scorer (--network none)
+        run: |
+          mkdir -p out
+          docker run --rm --network none -v "$PWD/input:/app/input" -v "$PWD/out:/app/output" chameleon | tee run.log
+          test "$(ls out/*_output.json | wc -l)" -eq 3
+          test "$(ls out/*_output.png | wc -l)" -eq 3
+          if grep -q "warning" run.log; then echo "self-check warnings"; exit 1; fi
+
+      - name: Hard-rule suite inside the image (--network none)
+        run: |
+          docker run --rm --network none -v "$PWD/tests:/app/tests:ro" -v "$PWD/input:/app/input:ro" \
+            --entrypoint python chameleon -m tests.test_engine
+
+      - name: Add-on sandbox code against a simulated Express document + the engine in the image
+        env:
+          PYTHON: docker run --rm -i --network none --entrypoint python chameleon
+        run: node addon/test/sandbox.test.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-outputs
+          path: out/
+
+  addon:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: addon
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Build and package with Adobe's tooling
+        run: npx ccweb-add-on-scripts package --analytics off

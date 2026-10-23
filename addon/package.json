@@ -1,0 +1,15 @@
+{
+    "name": "chameleon-express-addon",
+    "version": "1.0.0",
+    "description": "Chameleon: resize any design to every canvas - re-laid-out, not stretched",
+    "private": true,
+    "scripts": {
+        "clean": "ccweb-add-on-scripts clean",
+        "build": "ccweb-add-on-scripts build",
+        "start": "ccweb-add-on-scripts start",
+        "package": "ccweb-add-on-scripts package"
+    },
+    "devDependencies": {
+        "@adobe/ccweb-add-on-scripts": "3.11.0"
+    }
+}
