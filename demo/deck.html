@@ -1,0 +1,152 @@
+<!doctype html>
+<!-- Source of demo/chameleon_pitch.pdf. Images come from demo/make_demo.py (demo/stills/).
+     Print: chrome --headless --no-pdf-header-footer --print-to-pdf=demo/chameleon_pitch.pdf demo/deck.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Chameleon pitch</title>
+<style>
+  @font-face { font-family: "Solstice Serif"; src: url("../brand_kit/fonts/SolsticeSerif-Regular.ttf"); }
+  @font-face { font-family: "Solstice Serif"; font-weight: bold; src: url("../brand_kit/fonts/SolsticeSerif-Bold.ttf"); }
+  @font-face { font-family: "Solstice Sans"; src: url("../brand_kit/fonts/SolsticeSans-Regular.ttf"); }
+  @font-face { font-family: "Solstice Sans"; font-weight: bold; src: url("../brand_kit/fonts/SolsticeSans-Bold.ttf"); }
+  @page { size: 1280px 720px; margin: 0; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 19px/1.55 "Solstice Sans", sans-serif; color: #24212f; background: #f7f5f1; }
+  .slide { width: 1280px; height: 720px; padding: 64px 80px; position: relative; overflow: hidden;
+           break-after: page; display: flex; flex-direction: column; }
+  .slide::after { content: attr(data-n); position: absolute; right: 48px; bottom: 32px; font-size: 14px; color: #9a95a6; }
+  h1 { font: bold 92px/1 "Solstice Serif", serif; }
+  h2 { font: bold 40px/1.15 "Solstice Serif", serif; margin-bottom: 24px; }
+  p + p { margin-top: 14px; }
+  img { display: block; max-width: 100%; border-radius: 6px; }
+  .row { display: flex; gap: 48px; align-items: flex-start; }
+  .note { font-size: 15px; color: #6d6879; margin-top: 8px; }
+  .dark { background: #1d1a26; color: #ece9f2; }
+  .dark .note { color: #a49fb3; }
+  em { font-style: normal; color: #c4532a; }
+  .dark em { color: #f08a5c; }
+  table { border-collapse: collapse; width: 100%; font-size: 18px; }
+  td { padding: 13px 0; border-top: 1px solid #dcd7cf; vertical-align: top; }
+  td:first-child { width: 52%; padding-right: 32px; }
+  ol { padding-left: 26px; }
+  li + li { margin-top: 16px; }
+  code { font-size: 16px; }
+</style>
+</head>
+<body>
+
+<section class="slide dark" data-n="1 / 8" style="justify-content: center">
+  <p class="note" style="margin-bottom: 28px">Adobe University Hackathon 2026 &middot; Chameleon Challenge &middot; stage one</p>
+  <div class="row" style="align-items: center">
+    <div style="flex: 0 0 470px">
+      <h1>Chameleon</h1>
+      <p style="margin-top: 28px; font-size: 22px">We built a resize engine that picks up the pieces of a design and puts them
+        down again for the new canvas, instead of stretching or cropping the whole thing.</p>
+    </div>
+    <img src="stills/banner.png" style="width: 600px">
+  </div>
+</section>
+
+<section class="slide" data-n="2 / 8">
+  <h2>What resizing does today</h2>
+  <div class="row">
+    <img src="stills/crop.png" style="flex: none; width: 660px">
+    <div>
+      <p>We started where the brief did. Take the 1080 &times; 1350 poster from the starter kit and ask for a
+        1200 &times; 630 Facebook post.</p>
+      <p>A centre crop loses the logo, the button and half the bottle. Stretching (below) keeps everything,
+        but squashes it until you can't read it.</p>
+      <img src="stills/stretch.png" style="width: 100%; height: 130px; object-fit: cover; object-position: 50% 44%; margin-top: 14px">
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-n="3 / 8">
+  <h2>How it decides where things go</h2>
+  <img src="stills/how.png" style="width: 680px; height: 310px; object-fit: cover; position: absolute; right: 64px; top: 136px">
+  <div style="width: 400px; font-size: 18px">
+    <p>The input has no labels, so the engine works them out: text on a shape is a button, the biggest type is the
+      headline, a small picture near the top is probably the logo. A badge and its label move as one piece.</p>
+    <p>Then it picks a layout for the shape and finds the largest size where every line still fits, measured with the
+      renderer's own fonts.</p>
+  </div>
+  <table style="margin-top: auto; font-size: 16px; line-height: 1.35">
+    <tr><td>Square or taller than wide</td><td>Rows, top to bottom, in the source's reading order and spacing</td></tr>
+    <tr><td>Landscape, up to about 2.4 : 1</td><td>Product on one side, the text column on the other (scored against rows)</td></tr>
+    <tr><td>Wider than that</td><td>One row: pictures, then the text stack, then the button</td></tr>
+  </table>
+</section>
+
+<section class="slide" data-n="4 / 8">
+  <h2>The hardest sample, squeezed into a 728 &times; 90 ad</h2>
+  <div class="row">
+    <img src="stills/hard.png" style="width: 520px">
+    <div>
+      <p>The level 3 poster has a 150-character headline, three badges, a rotated ribbon and an image file that
+        doesn't exist.</p>
+      <p>At 728 &times; 90 there is no room for all of it. The least important pieces go first: small print, then
+        the ribbon, then the badges, then the subhead. Each one goes only if removing it makes the rest more
+        readable. The logo and the headline always stay.</p>
+      <p class="note">Removed elements are hidden (opacity 0), never deleted, so ids and counts match the source.</p>
+    </div>
+  </div>
+  <img src="stills/hard_result.png" style="width: 1120px; height: 170px; object-fit: cover; object-position: 50% 45%; margin-top: 20px">
+</section>
+
+<section class="slide" data-n="5 / 8">
+  <h2>Something we got wrong</h2>
+  <div class="row">
+    <img src="stills/bug.png" style="width: 700px">
+    <div>
+      <p>In our last round of checks we rendered every sample at a dozen formats we had never tested. At
+        336 &times; 280 the SUNSET SALE ribbon landed right on the logo.</p>
+      <p>Corner stickers were allowed to overlap pictures, which is what you want for a price tag on a bottle. But
+        the logo is a picture of a word.</p>
+      <p>The fix was one condition: stickers now treat the logo like text. When there's no room, the ribbon steps
+        aside instead.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-n="6 / 8">
+  <h2>How we check it</h2>
+  <table>
+    <tr><td>3 official samples and 7 stress designs, each at 20 real formats</td>
+        <td>200 resizes. Every hard rule is asserted: ids, in-canvas (rotation included), image proportions, unchanged copy</td></tr>
+    <tr><td>Does the text really fit?</td>
+        <td>Checked with the renderer's own line wrapping, so "fits" means fits in the PNG, not just in our maths</td></tr>
+    <tr><td>1,500 randomly generated designs</td><td>No crashes, no rule violations, no fallbacks</td></tr>
+    <tr><td>Speed</td><td>1 to 150 ms per layout. Deterministic, offline, no model</td></tr>
+    <tr><td>The Docker image</td><td>Built for linux/amd64 and run with <code>--network none</code> in CI on every push, like the scorer</td></tr>
+    <tr><td>Pixels generated</td><td>None. Only positions, sizes and font sizes change</td></tr>
+  </table>
+</section>
+
+<section class="slide" data-n="7 / 8">
+  <h2>In Adobe Express</h2>
+  <div class="row">
+    <img src="addon_panel.png" style="width: 560px; border: 1px solid #dcd7cf">
+    <div>
+      <p>The add-on runs the same engine on the page you're editing. Pick some formats and press Resize. Each one is
+        added as a new page with real text and shapes you can keep editing.</p>
+      <p>Anything the engine set aside is hidden on that page, not deleted, so you can bring it back.</p>
+      <p>Each result says what it did, for example <em>"banner row &middot; 3 secondary elements set aside"</em>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide dark" data-n="8 / 8">
+  <h2>What we'd build next</h2>
+  <ol style="max-width: 820px">
+    <li>Show the best three layouts for each format. The engine already scores the candidates and only shows the winner.</li>
+    <li>Let people lock an element in place and lay everything else out around it.</li>
+    <li>A small local vision model for focal points when cropping photos, and as a second opinion on roles.</li>
+    <li>Shorter, approved copy for tiny ad slots. Stage one rules this out on purpose, but it's where the
+      biggest remaining gains are.</li>
+  </ol>
+  <p class="note" style="margin-top: auto">Engine, add-on, tests and this deck: github.com/UditDewan/chameleon-adobe-hackathon</p>
+</section>
+
+</body>
+</html>

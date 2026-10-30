@@ -1,38 +1,47 @@
-# Chameleon — any design, every canvas
+# Chameleon
 
-**The problem.** A brand idea has to live as a square post, a tall story, a wide web banner, a
-728×90 ad and a dozen more shapes. Today a designer rebuilds it by hand for each one — or uses a
-resize that stretches or crops, and loses the logo, the headline or the call to action.
+Every brand idea ends up in a dozen shapes: a square post, a phone story, a wide banner, a 728 × 90 ad.
+Someone rebuilds the design by hand for each one, or uses a one-click resize that crops or stretches it.
+We tried that on the starter kit's poster. Cropped to a 1200 × 630 Facebook post, it lost the logo, the
+button and half the bottle. Stretched into a banner, it was unreadable.
 
-**The insight.** Resizing is not a picture problem, it's a *furniture* problem: keep the pieces,
-re-place them. To do that well you need three things a stretch never has — what belongs together,
-what matters most, and exactly how text will wrap.
+So we stopped treating a design as a picture. Chameleon keeps every element and places it again for the
+new canvas, the way you'd move furniture into a room with a different shape.
 
-**What we built.**
-1. **An engine** (`engine/resize.py`) that turns any design into a new layout for any canvas in
-   milliseconds. It recovers structure with no labels (buttons, stickers on products, captions,
-   cards, corner badges, reading order), chooses a layout family for the target shape — stacked,
-   split, or banner row — and solves the largest legible scale, measuring every line with the
-   renderer's own fonts. When space runs out, the least important element steps aside — only if
-   that keeps everything else readable.
-2. **An Adobe Express add-on** that runs it on the page you're working on: pick formats, and each
-   becomes a real, editable page — text stays text, nothing is flattened, set-aside elements are
-   hidden, not deleted.
-3. **An HTTP service + browser viewer**, so any tool can call the engine.
+## What it does
 
-**Proof.**
-- 3 official samples, 7 adversarial stress designs, 20 real formats → 200 resizes, every hard rule
-  asserted (ids, in-canvas incl. rotation, image proportions, unchanged copy, text fits its box,
-  using the renderer's own wrap as the oracle).
-- 1,500 randomly generated designs → no crash, no rule violation, no fallback.
-- 1–150 ms per layout, deterministic, offline, no model, no pixels generated.
+The input has no labels, so the engine works them out from geometry and type: text on a shape is a
+button, the biggest type is the headline, a small picture near the top is probably the logo, and a badge
+and its label move together. Then it picks a layout for the target shape (rows for square and tall
+canvases, product beside text for landscape, a single row for banners) and searches for the largest size
+where every line of text still fits. It measures text with the renderer's own fonts, so the line breaks
+in our JSON are the ones the PNG shows.
 
-**Why it matters for Express.** "Resize" is the feature every Express user reaches for and the one
-that disappoints most on real designs. Chameleon makes it trustworthy: one click, every format,
-on-brand — and it explains itself ("banner row · 3 secondary elements set aside").
+When there isn't room, the least important pieces step aside one at a time (small print, stickers,
+badges, subheads), but only if that makes the rest more readable. The logo and the headline always stay.
+Nothing is deleted; it's hidden.
 
-**Next.** Several candidate layouts per format to choose from; lock / pin elements; a vision model
-for focal-point crops and role hints; copy that shortens itself for tiny ad slots — all on top of
-the same engine.
+## What we built
 
-*Demo: `demo/chameleon_demo.mp4` (1 min).*
+- The engine, `engine/resize.py`: offline, deterministic, no model, 1 to 150 ms per layout.
+- An Adobe Express add-on that turns the page you're editing into new, editable pages, one per format.
+- A small HTTP service and browser viewer, so anything can call the engine.
+
+## How we know it works
+
+Ten designs (the three samples plus seven we wrote to break it) at twenty real formats, 200 resizes,
+with every hard rule asserted after every change. Text fit is checked with the renderer's own line
+wrapping. We also threw 1,500 random designs at it: no crashes, no rule violations. CI builds the Docker
+image and runs it with the network off, the way the scorer will.
+
+It isn't perfect. In our last round of checks we found the level 3 "SUNSET SALE" ribbon sitting on the
+logo at 336 × 280, because stickers were allowed over pictures and the logo is a picture of a word. Now
+stickers treat the logo like text, and the ribbon steps aside when there's no room.
+
+## Next
+
+Showing the best three layouts per format instead of one (the engine already scores them), locking an
+element in place, a small vision model for photo focal points, and shorter approved copy for tiny ads.
+
+Demo video: [`demo/chameleon_demo.mp4`](demo/chameleon_demo.mp4) (2 minutes, narrated).
+Deck: [`demo/chameleon_pitch.pdf`](demo/chameleon_pitch.pdf).
