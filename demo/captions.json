@@ -1,0 +1,12 @@
+[
+  {"id": "01_crop", "text": "Our brand team made this poster for a summer launch. Marketing wanted a wide one for Facebook, so we hit resize. The logo's gone. So is the button, and half the bottle."},
+  {"id": "02_stretch", "text": "Stretching it into a web banner isn't any better. Everything gets squashed, and you can't read a word."},
+  {"id": "03_morph", "text": "So we built Chameleon. It doesn't treat a design like a photo. It keeps every piece, the logo, the bottle, the headline, the button, and lays them out again for the new shape."},
+  {"id": "04_tour", "text": "Here's the same design as a phone story. As a 728 by 90 ad. And back to a square. Nobody touched it."},
+  {"id": "05_how", "text": "Under the hood, it works out which pieces belong together and which ones matter most. It measures every line of text with the renderer's own fonts, so it knows exactly where each line will break."},
+  {"id": "06_hard", "text": "This is the hardest sample in the starter kit. A hundred-and-fifty-character headline, three badges, a rotated ribbon, and an image that's missing. When space runs out, the small stuff steps aside first. The logo and the headline never do."},
+  {"id": "07_bug", "text": "It's not perfect. This week we caught the sale ribbon sitting right on top of the logo at 336 by 280. Stickers now treat the logo like text, and our tests run ten designs through twenty formats after every change, so we'd see it if it came back."},
+  {"id": "08_grid", "text": "That's one design in twelve formats. Each one took a few milliseconds, and every pixel comes from the original artwork."},
+  {"id": "09_addon", "text": "In Adobe Express, it's an add-on. Pick your formats, hit resize, and each one comes back as a real page you can keep editing."},
+  {"id": "10_outro", "text": "That's Chameleon. The engine and the add-on are both in our repo. Thanks for watching."}
+]

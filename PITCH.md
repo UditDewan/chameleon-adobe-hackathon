@@ -43,6 +43,5 @@ stickers treat the logo like text, and the ribbon steps aside when there's no ro
 Showing the best three layouts per format instead of one (the engine already scores them), locking an
 element in place, a small vision model for photo focal points, and shorter approved copy for tiny ads.
 
-Demo video: [`demo/chameleon_demo.mp4`](demo/chameleon_demo.mp4) (2 minutes, captions and music), or
-[`demo/chameleon_demo_narrated.mp4`](demo/chameleon_demo_narrated.mp4) with a voiceover.
+Demo video: [`demo/chameleon_demo.mp4`](demo/chameleon_demo.mp4) (2 minutes, captions and music).
 Deck: [`demo/chameleon_pitch.pdf`](demo/chameleon_pitch.pdf).

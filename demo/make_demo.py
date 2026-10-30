@@ -1,11 +1,10 @@
-"""Renders the narrated demo video from real engine output (official renderer, brand fonts).
+"""Renders the demo video from real engine output (official renderer, brand fonts).
 
-    uv run --with edge-tts python demo/voiceover.py    # once: narration.json -> demo/voice/*.mp3
-    python demo/make_demo.py                           # -> demo/chameleon_demo.mp4 + demo/stills/
+    python demo/make_demo.py        # demo/captions.json -> demo/chameleon_demo.mp4 + demo/stills/
 
 Every layout on screen is the engine's own output. The morphs re-render the design at each
-frame while its elements travel from one layout to the next. The music bed is synthesised here,
-so there is nothing to license. Needs ffmpeg on PATH (or imageio-ffmpeg).
+frame while its elements travel from one layout to the next. Scenes are timed to their captions.
+The music bed is synthesised here, so there is nothing to license. Needs ffmpeg on PATH (or imageio-ffmpeg).
 Dev tooling only; the engine does not depend on it.
 """
 import copy
@@ -30,7 +29,8 @@ W, H, FPS = 1920, 1080, 30
 DEMO, FONTS = ROOT / "demo", ROOT / "brand_kit" / "fonts"
 TMP = Path(tempfile.mkdtemp(prefix="chameleon_demo_"))
 WHITE, MUTED, ACCENT, RED = (245, 243, 249), (160, 154, 180), (232, 106, 58), (240, 76, 76)
-LEAD, TAIL, FADE = 0.35, 0.9, 0.4  # voice starts LEAD into its scene; scenes end TAIL after it
+LEAD, TAIL, FADE = 0.35, 0.9, 0.4  # captions start LEAD into their scene; scenes end TAIL after the last
+WPS = 2.7  # caption reading pace, words per second
 ROLE_COLORS = [(240, 180, 60), (110, 200, 160), (120, 170, 250), (232, 106, 58), (220, 130, 220), (200, 200, 120)]
 
 
@@ -219,8 +219,8 @@ def caption(fr, text):
 
 
 # --------------------------------------------------------------------------- scenes
-# Each scene: (voice id, minimum length, draw(frame, t)). Timings are seconds into the scene and
-# follow the narration; a longer recording only lengthens the holds.
+# Each scene: (caption id, minimum length, draw(frame, t)). Timings are seconds into the scene and
+# follow the captions; longer captions only lengthen the holds.
 def scene_crop():
     src = task("chameleon_sample_level3_advanced")
     big = render(src, 560, 700)
@@ -433,12 +433,6 @@ def ffmpeg_exe():
         return shutil.which("ffmpeg") or sys.exit("needs ffmpeg on PATH (or pip install imageio-ffmpeg)")
 
 
-def duration(ff, path):
-    err = subprocess.run([ff, "-i", str(path)], capture_output=True, text=True).stderr
-    h, m, s = re.search(r"Duration: (\d+):(\d+):([\d.]+)", err).groups()
-    return int(h) * 3600 + int(m) * 60 + float(s)
-
-
 def music(seconds, path, sr=44100):
     """A quiet Am-F-C-G pad with a soft arpeggio on top."""
     n = int(seconds * sr)
@@ -477,17 +471,15 @@ def music(seconds, path, sr=44100):
 # --------------------------------------------------------------------------- main
 def main():
     ff = ffmpeg_exe()
-    lines = {x["id"]: x["say"] for x in json.loads((DEMO / "narration.json").read_text(encoding="utf-8"))}
+    lines = {x["id"]: x["text"] for x in json.loads((DEMO / "captions.json").read_text(encoding="utf-8"))}
     plan, start = [], 0.0
     for make in SCENES:
         vid, min_len, draw = make()
-        voice = DEMO / "voice" / f"{vid}.mp3"
-        vlen = duration(ff, voice)
-        length = max(min_len, LEAD + vlen + TAIL)
         sents = re.split(r"(?<=[.!?])\s+", lines[vid])
-        weights = np.cumsum([len(s) + 12 for s in sents])  # sentence timing ~ its length plus a pause
-        cues = [(LEAD + vlen * (wt - (len(s) + 12)) / weights[-1], s) for wt, s in zip(weights, sents)]
-        plan.append((vid, start, length, draw, voice, cues))
+        reads = [len(s.split()) / WPS + 0.35 for s in sents]  # each caption stays up long enough to read
+        cues = [(LEAD + sum(reads[:i]), s) for i, s in enumerate(sents)]
+        length = max(min_len, LEAD + sum(reads) + TAIL)
+        plan.append((vid, start, length, draw, cues))
         start += length
     total = start
 
@@ -497,7 +489,7 @@ def main():
                              "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "21",
                              "-preset", "medium", str(video)], stdin=subprocess.PIPE)
     prev = None
-    for vid, s0, length, draw, _, cues in plan:
+    for vid, s0, length, draw, cues in plan:
         for i in range(round(length * FPS)):
             t = i / FPS
             fr = BACK.copy()
@@ -521,27 +513,12 @@ def main():
 
     bed = TMP / "music.wav"
     music(total, bed)
-    mux = [ff, "-y", "-loglevel", "error", "-i", str(video), "-i", str(bed)]
-    tail = ["-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}",
-            "-movflags", "+faststart"]
-    # main cut: captions and music only, nothing synthetic; the narrated cut adds the voice
     out = DEMO / "chameleon_demo.mp4"
-    subprocess.run([*mux, "-filter_complex", "[1:a]volume=1.6,alimiter=limit=0.95[a]", *tail, str(out)], check=True)
-    inputs, chains = [], []
-    for i, (_, s0, _, _, voice, _) in enumerate(plan):
-        inputs += ["-i", str(voice)]
-        ms = int((s0 + LEAD) * 1000)
-        chains.append(f"[{i + 2}:a]aresample=44100,aformat=channel_layouts=stereo,adelay={ms}:all=1[v{i}]")
-    vox = "".join(f"[v{i}]" for i in range(len(plan)))
-    graph = ";".join(chains + [
-        f"{vox}amix=inputs={len(plan)}:normalize=0,volume=1.4,asplit[vo1][vo2]",
-        # the bed sits ~16 dB under the voice and ducks further while someone is talking
-        "[1:a]volume=0.22[mus];[mus][vo1]sidechaincompress=threshold=0.015:ratio=6:attack=40:release=700[bed]",
-        "[bed][vo2]amix=inputs=2:normalize=0,alimiter=limit=0.95[a]"])
-    narrated = DEMO / "chameleon_demo_narrated.mp4"
-    subprocess.run([*mux, *inputs, "-filter_complex", graph, *tail, str(narrated)], check=True)
+    subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(video), "-i", str(bed), "-map", "0:v", "-map", "1:a",
+                    "-af", "volume=1.6,alimiter=limit=0.95", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+                    "-t", f"{total:.2f}", "-movflags", "+faststart", str(out)], check=True)
     shutil.rmtree(TMP, ignore_errors=True)
-    print(f"wrote {out} and {narrated.name} ({out.stat().st_size / 1e6:.1f} MB, {total:.0f}s)")
+    print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB, {total:.0f}s)")
 
 
 if __name__ == "__main__":
