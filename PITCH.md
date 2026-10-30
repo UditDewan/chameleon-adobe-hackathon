@@ -31,7 +31,7 @@ Nothing is deleted; it's hidden.
 
 Ten designs (the three samples plus seven we wrote to break it) at twenty real formats, 200 resizes,
 with every hard rule asserted after every change. Text fit is checked with the renderer's own line
-wrapping. We also threw 1,500 random designs at it: no crashes, no rule violations. CI builds the Docker
+wrapping. We also threw 1,500 random designs at it, and none of them crashed it or broke a rule. CI builds the Docker
 image and runs it with the network off, the way the scorer will.
 
 It isn't perfect. In our last round of checks we found the level 3 "SUNSET SALE" ribbon sitting on the
@@ -43,5 +43,6 @@ stickers treat the logo like text, and the ribbon steps aside when there's no ro
 Showing the best three layouts per format instead of one (the engine already scores them), locking an
 element in place, a small vision model for photo focal points, and shorter approved copy for tiny ads.
 
-Demo video: [`demo/chameleon_demo.mp4`](demo/chameleon_demo.mp4) (2 minutes, narrated).
+Demo video: [`demo/chameleon_demo.mp4`](demo/chameleon_demo.mp4) (2 minutes, captions and music), or
+[`demo/chameleon_demo_narrated.mp4`](demo/chameleon_demo_narrated.mp4) with a voiceover.
 Deck: [`demo/chameleon_pitch.pdf`](demo/chameleon_pitch.pdf).

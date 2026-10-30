@@ -115,8 +115,8 @@
     <tr><td>3 official samples and 7 stress designs, each at 20 real formats</td>
         <td>200 resizes. Every hard rule is asserted: ids, in-canvas (rotation included), image proportions, unchanged copy</td></tr>
     <tr><td>Does the text really fit?</td>
-        <td>Checked with the renderer's own line wrapping, so "fits" means fits in the PNG, not just in our maths</td></tr>
-    <tr><td>1,500 randomly generated designs</td><td>No crashes, no rule violations, no fallbacks</td></tr>
+        <td>Checked with the renderer's own line wrapping, so a box only counts as fitting if the text fits in the rendered PNG</td></tr>
+    <tr><td>1,500 randomly generated designs</td><td>None crashed, broke a rule or fell back to a letterbox</td></tr>
     <tr><td>Speed</td><td>1 to 150 ms per layout. Deterministic, offline, no model</td></tr>
     <tr><td>The Docker image</td><td>Built for linux/amd64 and run with <code>--network none</code> in CI on every push, like the scorer</td></tr>
     <tr><td>Pixels generated</td><td>None. Only positions, sizes and font sizes change</td></tr>

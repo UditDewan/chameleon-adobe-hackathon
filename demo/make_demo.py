@@ -521,7 +521,13 @@ def main():
 
     bed = TMP / "music.wav"
     music(total, bed)
-    inputs, chains = ["-i", str(video), "-i", str(bed)], []
+    mux = [ff, "-y", "-loglevel", "error", "-i", str(video), "-i", str(bed)]
+    tail = ["-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}",
+            "-movflags", "+faststart"]
+    # main cut: captions and music only, nothing synthetic; the narrated cut adds the voice
+    out = DEMO / "chameleon_demo.mp4"
+    subprocess.run([*mux, "-filter_complex", "[1:a]volume=1.6,alimiter=limit=0.95[a]", *tail, str(out)], check=True)
+    inputs, chains = [], []
     for i, (_, s0, _, _, voice, _) in enumerate(plan):
         inputs += ["-i", str(voice)]
         ms = int((s0 + LEAD) * 1000)
@@ -532,12 +538,10 @@ def main():
         # the bed sits ~16 dB under the voice and ducks further while someone is talking
         "[1:a]volume=0.22[mus];[mus][vo1]sidechaincompress=threshold=0.015:ratio=6:attack=40:release=700[bed]",
         "[bed][vo2]amix=inputs=2:normalize=0,alimiter=limit=0.95[a]"])
-    out = DEMO / "chameleon_demo.mp4"
-    subprocess.run([ff, "-y", "-loglevel", "error", *inputs, "-filter_complex", graph, "-map", "0:v", "-map", "[a]",
-                    "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}", "-movflags", "+faststart",
-                    str(out)], check=True)
+    narrated = DEMO / "chameleon_demo_narrated.mp4"
+    subprocess.run([*mux, *inputs, "-filter_complex", graph, *tail, str(narrated)], check=True)
     shutil.rmtree(TMP, ignore_errors=True)
-    print(f"wrote {out} ({out.stat().st_size / 1e6:.1f} MB, {total:.0f}s)")
+    print(f"wrote {out} and {narrated.name} ({out.stat().st_size / 1e6:.1f} MB, {total:.0f}s)")
 
 
 if __name__ == "__main__":
