@@ -842,9 +842,9 @@ class _Engine:
 
     @staticmethod
     def _clash(u, b, place):
-        """Pins may overlap pictures (a sticker on a product) but never text."""
+        """Pins may overlap pictures (a sticker on a product) but never text — a wordmark logo included."""
         bx = (b[0], b[1], b[0] + b[2], b[1] + b[3])
-        return any(v is not u and (v.has_text or u.has_text and not v.has_img) and
+        return any(v is not u and (v.has_text or v.role == "logo" or u.has_text and not v.has_img) and
                    _inter(bx, (p[0], p[1], p[0] + p[2], p[1] + p[3])) > 0 for v, p in place.items())
 
     def _stack_all(self, gone):
