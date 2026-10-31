@@ -29,7 +29,9 @@ def rendered_lines(e):
 
 
 def check(src, W, H):
-    out = R.resize(src, {"width": W, "height": H})
+    notes = {}
+    out = R.resize(src, {"width": W, "height": H}, notes)
+    assert notes["layout"] != "letterbox", f"fell back to letterboxing @ {W}x{H}"
     assert out["canvas"] == {"width": W, "height": H}
     assert sorted(e["id"] for e in out["elements"]) == sorted(e["id"] for e in src["elements"]), "ids changed"
     by_id = {e["id"]: e for e in src["elements"]}
@@ -57,20 +59,13 @@ def check(src, W, H):
 
 
 def test_all():
-    fallbacks = []
-    real = R._letterbox
-    R._letterbox = lambda *a: fallbacks.append(a) or real(*a)
-    try:
-        files = sorted((ROOT / "input").glob("*.json")) + sorted((ROOT / "tests/designs").glob("*.json"))
-        assert files, "no designs found"
-        for f in files:
-            src = json.loads(f.read_text())["source"]
-            for W, H in FORMATS:
-                check(src, W, H)
-        assert not fallbacks, f"{len(fallbacks)} layouts fell back to letterboxing"
-        return len(files) * len(FORMATS)
-    finally:
-        R._letterbox = real
+    files = sorted((ROOT / "input").glob("*.json")) + sorted((ROOT / "tests/designs").glob("*.json"))
+    assert files, "no designs found"
+    for f in files:
+        src = json.loads(f.read_text())["source"]
+        for W, H in FORMATS:
+            check(src, W, H)
+    return len(files) * len(FORMATS)
 
 
 if __name__ == "__main__":

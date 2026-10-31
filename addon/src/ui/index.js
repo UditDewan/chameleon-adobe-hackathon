@@ -33,7 +33,7 @@ function say(text, err = false) {
 
 function fail(err) {
     console.error(err);
-    fail(err);
+    say(err.message || String(err), true);
 }
 
 async function connectExpress() {
@@ -277,12 +277,6 @@ async function start() {
     try {
         await loadFormats();
         await loadSources();
-        const link = new URLSearchParams(location.hash.slice(1)); // deep link: #sample=<name>&run
-        if (link.get("sample")) {
-            $("source").value = `sample:${link.get("sample")}`;
-            await pickSource($("source").value);
-        }
-        if (link.has("run")) await run();
     } catch (err) {
         fail(err);
     }

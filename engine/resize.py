@@ -274,14 +274,9 @@ class _Text:
         return hi, self.layout(e, fs, hi)
 
 
-_TEXT = None
-
-
+@lru_cache(maxsize=None)
 def _text():
-    global _TEXT
-    if _TEXT is None:
-        _TEXT = _Text()
-    return _TEXT
+    return _Text()  # one measurer per process: loading the fonts is the slow part
 
 
 # --------------------------------------------------------------------------- analysis

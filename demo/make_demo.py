@@ -426,11 +426,7 @@ STILLS = [("01_crop", 10.2, "crop"), ("02_stretch", 5.0, "stretch"), ("03_morph"
 
 # --------------------------------------------------------------------------- audio
 def ffmpeg_exe():
-    try:
-        import imageio_ffmpeg
-        return imageio_ffmpeg.get_ffmpeg_exe()
-    except ImportError:
-        return shutil.which("ffmpeg") or sys.exit("needs ffmpeg on PATH (or pip install imageio-ffmpeg)")
+    return shutil.which("ffmpeg") or sys.exit("needs ffmpeg on PATH")
 
 
 def music(seconds, path, sr=44100):

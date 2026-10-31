@@ -18,9 +18,8 @@ import base64
 import json
 import os
 import tempfile
-import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from engine.resize import ROOT, resize
@@ -53,7 +52,6 @@ FORMATS = [  # the kind of catalogue the scorer draws from: named platform forma
     {"group": "Web & print", "name": "Presentation 16:9", "width": 1920, "height": 1080},
     {"group": "Web & print", "name": "A4 Poster", "width": 2480, "height": 3508},
 ]
-_LOCK = threading.Lock()  # ponytail: one engine call at a time; a process pool if this ever serves a crowd
 
 
 def render_png(design) -> str:
@@ -129,30 +127,23 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             path = self.path.split("?")[0]
             if path == "/render":
-                design = _design(body.get("design", body))
-                with _LOCK:
-                    return self._send(200, {"png": render_png(design)})
+                return self._send(200, {"png": render_png(_design(body.get("design", body)))})
             if path == "/resize":
                 source = _design(body)
-                targets = body.get("targets") or [body["target_canvas"]]
                 results = []
-                for t in targets:
+                for t in body["targets"]:
                     canvas = _size(t)
-                    with _LOCK:
-                        t0, notes = time.perf_counter(), {}
-                        design = resize(source, canvas, notes)
-                        ms = round((time.perf_counter() - t0) * 1000, 1)
-                        item = {"target": {**t, **canvas}, "design": design, "notes": notes, "ms": ms}
-                        if body.get("render", True):
-                            item["png"] = render_png(design)
+                    t0, notes = time.perf_counter(), {}
+                    design = resize(source, canvas, notes)
+                    ms = round((time.perf_counter() - t0) * 1000, 1)
+                    item = {"target": {**t, **canvas}, "design": design, "notes": notes, "ms": ms}
+                    if body.get("render", True):
+                        item["png"] = render_png(design)
                     results.append(item)
                 return self._send(200, {"results": results})
             self._send(404, {"error": "not found"})
         except (ValueError, KeyError, TypeError) as exc:  # bad input is the caller's to fix
             self._send(400, {"error": str(exc)})
-
-    def log_message(self, fmt, *args):  # quiet: one line per request
-        print(f"{self.address_string()} {fmt % args}")
 
 
 def main():
@@ -160,7 +151,8 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8787)
     args = ap.parse_args()
-    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    # ponytail: single-threaded, one request at a time; ThreadingHTTPServer + a lock if it ever serves a crowd
+    server = HTTPServer((args.host, args.port), Handler)
     print(f"CHAMELEON engine on http://{args.host}:{args.port}  (viewer: /viewer/)")
     server.serve_forever()
 

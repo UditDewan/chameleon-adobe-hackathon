@@ -37,7 +37,6 @@ Adobe's tooling; append `-- --analytics off` to skip its analytics prompt.
 
 The same panel also works in any browser without Express: start the engine and open
 <http://localhost:8787/viewer/> — the cards then offer PNG / JSON downloads instead.
-Deep links preselect a sample and run it, e.g. `/viewer/#sample=chameleon_sample_level2_core&run`.
 
 ## Status
 
